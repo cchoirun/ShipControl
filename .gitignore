@@ -1,1 +1,7 @@
 .vscode
+pid/build/
+pid/install/
+pid/log/
+transmission/build/
+transmission/install/
+transmission/log/
