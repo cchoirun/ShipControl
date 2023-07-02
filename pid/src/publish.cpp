@@ -5,7 +5,7 @@
 int c = 10;
 // Fungsi callback untuk mendapatkan feedback aktual dari servo (misalnya, membaca sensor atau data yang dikirim oleh servo)
 int getFeedback()
-{
+{   if (c >= 90) c = 0;
     // Contoh: Mendapatkan feedback dari sensor atau data yang dikirim oleh servo
     // Gantikan kode ini dengan implementasi sesuai dengan servo dan sensor yang Anda gunakan
     int feedback = c;
