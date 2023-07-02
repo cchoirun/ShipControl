@@ -199,9 +199,7 @@ def main():
             break
 
 
-    # print(f"Maximum FPS Rate: {maxFPS}")
-    # print(f"Minimum FPS Rate: {minFPS}")
-    # print(f"Average FPS Rate: {totalFPS / FPSCount}")
+    
 
     video_cap.release()
     cv2.destroyAllWindows()

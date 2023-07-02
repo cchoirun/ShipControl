@@ -1,126 +1,163 @@
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// #include <iostream>
-// #include <chrono>
-// #include <functional>
-// #include <memory>
-// #include <string>
-// #include "opencv2/highgui.hpp"
-// #include "opencv2/imgproc.hpp"
-// #include "opencv2/imgcodecs.hpp"
-
-// using namespace std::chrono_literals;
-// using namespace cv;
-
-// /* This example creates a subclass of Node and uses std::bind() to register a
-//  * member function as a callback from the timer. */
-
-// class MinimalPublisher : public rclcpp::Node
-// {
-// public:
-//   MinimalPublisher()
-//   : Node("minimal_publisher"), count_(0)
-//   {
-//     publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
-//     timer_ = this->create_wall_timer(
-//       500ms, std::bind(&MinimalPublisher::timer_callback, this));
-//   }
-
-// private:
-//   void timer_callback()
-//   {
-//     auto message = std_msgs::msg::String();
-//     message.data = "Hello, world! " + std::to_string(count_++);
-//     RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-//     publisher_->publish(message);
-//   }
-//   rclcpp::TimerBase::SharedPtr timer_;
-//   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-//   size_t count_;
-// };
-
-
-
-// int main(int argc, char * argv[])
-// {
-  
-
-//   rclcpp::init(argc, argv);
-//   rclcpp::spin(std::make_shared<MinimalPublisher>());
-//   rclcpp::shutdown();
-//   return 0;
-// }
-
-
-// Client side implementation of UDP client-server model
-#include <bits/stdc++.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/types.h>
+#include <std_msgs/msg/int32_multi_array.hpp>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <netinet/in.h>
+#include <unistd.h>
+#include <thread>
 
-#define PORT	 8080
-#define MAXLINE 1024
+#include <iostream>
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <string>
+#include <rclcpp/rclcpp.hpp>
+#include "std_msgs/msg/int32.hpp"
+#include "std_msgs/msg/u_int8_multi_array.hpp"
+#include <algorithm>
 
-// Driver code
-int main() {
-  std::string ip_penerima = "192.168.33.194";
-	int sockfd;
-	char buffer[MAXLINE];
-	const char *hello = "Laptop Ni'am";
-	struct sockaddr_in	 addrTujuan;
+using namespace std::chrono_literals;
 
-	// Creating socket file descriptor
-	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
-		perror("socket creation failed");
-		exit(EXIT_FAILURE);
-	}
+// Implementasi fungsi clamp
+template <typename T>
+const T& clamp(const T& value, const T& minValue, const T& maxValue) {
+    return std::max(minValue, std::min(value, maxValue));
+}
 
-	memset(&addrTujuan, 0, sizeof(addrTujuan));
+
+#define BUF_SIZE 35
+
+std::string my_ip = "0.0.0.0";
+int my_port = 8888;
+std::string hw_ip = "10.8.9.221";
+int hw_port = 8888;
+
+struct sockaddr_in my_address, hw_address;
+int sock_hw;
+
+rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub_stm;
+
+int low_truster = 1200, high_truster = 1800;
+int low_v = 0, high_v = 100;
+
+int ltruster = 1500;
+int rtruster = 1500;
+int vtruster = 0;
+
+int lt = clamp(ltruster, low_truster, high_truster);
+int rt = clamp(ltruster, low_truster, high_truster);
+int vt = clamp(vtruster, low_v, high_v);
+
+
+void servoCallback(const std_msgs::msg::Int32::SharedPtr msg)
+{
+	lt = msg->data;
+}
+
+void PC_2_STM() {
+    // uint8_t send_data[16] = {};
+    unsigned char send_data[16] = {'i','t','s'};
+    std::string data = "";
+    
+    // std::cout << " manual" << std::endl;
+    send_data[3] = (lt >> 8) & 0xFF;
+    send_data[4] = lt & 0xFF;
+    send_data[5] = (rt >> 8) & 0xFF;
+    send_data[6] = rt & 0xFF;
+    send_data[7] = (vt >> 8) & 0xFF;
+    send_data[8] = vt & 0xFF;
+    // send_data[9] = (vrt >> 8) & 0xFF;
+    // send_data[10] = vrt & 0xFF;
+    
+ 
+    sendto(sock_hw, &send_data, sizeof(send_data), 0, (struct sockaddr*)&hw_address, sizeof(hw_address));
+}
+
+void STM_2_PC() {
+    int recv_len;
+    unsigned char buf[BUF_SIZE] = {};
+    socklen_t hw_address_len = sizeof(hw_address);
+
+    while (rclcpp::ok()) {
+        // memset(buf, 0, sizeof(buf));
+        memset(buf, 0, sizeof(buf));
+ 		recv_len = recvfrom(sock_hw, buf, sizeof(buf), 0, (struct sockaddr*)&hw_address, &hw_address_len);
+        recv_len = recv(sock_hw, buf, sizeof(buf), 0);
+        if (recv_len < 0) {
+            RCLCPP_INFO(rclcpp::get_logger(""), "No message received");
+            // continue;
+        }
+        // std::string message(reinterpret_cast<char*>(buf), recv_len);
+        // std::string its = message.substr(0, 3);
+        // std::string mmessage = message.substr(3);
+        // if (its != "its") {
+        //     RCLCPP_INFO_STREAM(rclcpp::get_logger("STM_2_PC"), "Checksum failed.." );
+        //     // continue;
+        // }
+        uint8_t ltruster = 12;
+        uint8_t rtruster = 34;
+        uint8_t vel = 10;
+        auto to_pub = std_msgs::msg::Int32();
+        to_pub.data = ltruster;
+        pub_stm->publish(to_pub);
+        // RCLCPP_INFO_STREAM(rclcpp::get_logger("STM_2_PC"), "data recv: " << to_pub->data[0] << "/" << to_pub->data[1] << "/" << to_pub->data[2]);
+    }
+}
+
+int main(int argc, char** argv) {
+    rclcpp::init(argc, argv);
+    auto nh = rclcpp::Node::make_shared("transmission");
+
+
+
+    pub_stm = nh->create_publisher<std_msgs::msg::Int32>("/hardware/stm", 1);
 	
-	// Filling server information
-	addrTujuan.sin_family = AF_INET;
-	addrTujuan.sin_port = htons(PORT);
-	addrTujuan.sin_addr.s_addr = INADDR_ANY;
-	if(inet_pton(AF_INET, ip_penerima.c_str(), &(addrTujuan.sin_addr)) <= 0) {
-    std::cerr << "Alamat slah\n";
-    return 1;
-  }
 
-	int n;
-	socklen_t len;
-	
-	sendto(sockfd, (const char *)hello, strlen(hello),
-		MSG_CONFIRM, (const struct sockaddr *) &addrTujuan,
-			sizeof(addrTujuan));
-	std::cout<<"Hello message sent."<<std::endl;
+    my_address.sin_family = AF_INET;
+    my_address.sin_addr.s_addr = INADDR_ANY;
+    my_address.sin_port = htons(my_port);
+
+    hw_address.sin_family = AF_INET;
+    hw_address.sin_addr.s_addr = inet_addr("10.8.92.221");
+    hw_address.sin_port = htons(hw_port);
+
+    sock_hw = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock_hw == -1) {
+        RCLCPP_ERROR(rclcpp::get_logger(""), "Failed to create socket");
+        return -1;
+    }
+    int reuse = 1;
+    if (setsockopt(sock_hw, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) == -1) {
+
+        RCLCPP_ERROR(rclcpp::get_logger(""), "Failed to set socket options");
+        return -1;
+    }
+    if (bind(sock_hw, (struct sockaddr*)&my_address, sizeof(my_address)) == -1) {
+
+        RCLCPP_ERROR(rclcpp::get_logger(""), "Failed to bind socket");
+        return -1;
+    }
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000;  // 100 ms
+    setsockopt(sock_hw, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
+
+    std::thread read_thread(STM_2_PC);
+    read_thread.detach();
+	auto sub_stm = nh->create_subscription<std_msgs::msg::Int32>(
+		"servo_command", 10, servoCallback);
 		
-	n = recvfrom(sockfd, (char *)buffer, MAXLINE,
-				MSG_WAITALL, (struct sockaddr *) &addrTujuan,
-				&len);
-	buffer[n] = '\0';
-	std::cout<<"Server :"<<buffer<<std::endl;
+    rclcpp::Rate rate(10);
+    while (rclcpp::ok()) {
+        PC_2_STM();
+        
+        // rate.sleep();
+        rclcpp::spin_some(nh);
+    }
 
-	close(sockfd);
-	return 0;
+    close(sock_hw);
+
+    rclcpp::shutdown();
+
+    return 0;
 }

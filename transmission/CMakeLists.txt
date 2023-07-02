@@ -10,16 +10,15 @@ find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(pid REQUIRED)
+# find_package(pid REQUIRED)
 
-add_executable(talker src/publisher_member_function.cpp  
-${CMAKE_CURRENT_SOURCE_DIR}/../pid/src/pid.cpp)
+add_executable(talker src/publisher_member_function.cpp )
 add_executable(listener src/subscriber_member_function.cpp)
 ament_target_dependencies(talker rclcpp std_msgs)
 ament_target_dependencies(listener rclcpp std_msgs)
-include_directories(
-  ${pid_INCLUDE_DIRS}
-)
+# include_directories(
+#   ${pid_INCLUDE_DIRS}
+# )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -36,7 +35,7 @@ endif()
 
 # target_include_directories(transmission
 #     PRIVATE
-#     # ${pid_INCLUDE_DIRS}
+#     include/
 # )
 
 install(TARGETS

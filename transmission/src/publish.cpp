@@ -2,23 +2,15 @@
 #include <iostream>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
-int feedback = 0;
+int c = 10;
 // Fungsi callback untuk mendapatkan feedback aktual dari servo (misalnya, membaca sensor atau data yang dikirim oleh servo)
-// int getFeedback()
-// {   if (c >= 90) c = 0;
-//     // Contoh: Mendapatkan feedback dari sensor atau data yang dikirim oleh servo
-//     // Gantikan kode ini dengan implementasi sesuai dengan servo dan sensor yang Anda gunakan
-//     int feedback = c;
-//     c+= 10; // Misalnya, sensor memberikan nilai feedback dalam rentang 0-100
-//     return feedback;
-// }
-
-void feedbackCallback(const std_msgs::msg::Int32::SharedPtr msg)
-{
-    // Mendapatkan nilai feedback dari pesan yang diterima
-    int feedback = msg->data;
-
-    RCLCPP_INFO_STREAM(rclcpp::get_logger("subscriber"), "Received feedback: " << feedback);
+int getFeedback()
+{   if (c >= 90) c = 0;
+    // Contoh: Mendapatkan feedback dari sensor atau data yang dikirim oleh servo
+    // Gantikan kode ini dengan implementasi sesuai dengan servo dan sensor yang Anda gunakan
+    int feedback = c;
+    c+= 10; // Misalnya, sensor memberikan nilai feedback dalam rentang 0-100
+    return feedback;
 }
 
 int main(int argc, char *argv[])
@@ -36,17 +28,12 @@ int main(int argc, char *argv[])
 
     // Membuat publisher untuk mengirimkan data ke servo
     auto publisher = node->create_publisher<std_msgs::msg::Int32>("servo_command", 10);
-    auto subscriber = node->create_subscription<std_msgs::msg::Int32>(
-        "/hardware/stm",
-        10,
-        feedbackCallback
-    );
-        rclcpp::Rate loop_rate(10);
+
     // Loop utama (misalnya, menggunakan rate loop di ROS 2)
     while (rclcpp::ok())
     {
         // Mendapatkan feedback aktual dari servo
-        // int feedback = getFeedback();
+        int feedback = getFeedback();
 
         // Mengatur feedback ke objek PID
         pidController.setFeedback(feedback);
